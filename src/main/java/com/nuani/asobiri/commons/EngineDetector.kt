@@ -44,6 +44,7 @@ object EngineDetector {
             isRpgMakerVxAce(paths)-> Engine.RPG_MAKER_VX_ACE
             isRpgMakerVx(paths)   -> Engine.RPG_MAKER_VX
             isRpgMakerXp(paths)   -> Engine.RPG_MAKER_XP
+            isKirikiri(paths)     -> Engine.KIRIKIRI
             isTyrano(paths)       -> Engine.TYRANO
             isGodot(paths)        -> Engine.GODOT
             isFlash(paths)        -> Engine.FLASH
@@ -89,6 +90,17 @@ object EngineDetector {
 
     private fun isRpgMakerXp(paths: List<String>) = paths.any {
         it.endsWith(".rxproj") || it.endsWith(".rxdata") || it.endsWith(".rgssad")
+    }
+
+    // KiriKiri ships as root-level XP3 archives (data.xp3 plus patch/asset
+    // packs; the extension belongs to this engine family alone, and a nested
+    // archive is game data, not a game) or unpacked with the loader's
+    // mandatory boot script at the project root or under data/. Must precede
+    // isTyrano: Tyrano cloned KAG's layout, so an unpacked KiriKiri tree also
+    // carries data/scenario/*.ks and the looser Tyrano rule would swallow it.
+    private fun isKirikiri(paths: List<String>) = paths.any {
+        (it.endsWith(".xp3") && '/' !in it) ||
+            it == "startup.tjs" || it == "data/startup.tjs"
     }
 
     // Tyrano ships its runtime in tyrano/ and its script (.ks) under

@@ -29,6 +29,7 @@ enum class Engine(val id: String, val displayName: String) {
     GODOT("godot", "Godot"),
     HTML("html", "HTML5"),
     FLASH("flash", "Flash"),
+    KIRIKIRI("kirikiri", "KiriKiri"),
 
     // Diagnostics-only. EngineDetector never emits it, so no real game ever
     // routes here; it exists so a stub plugin can exercise discovery and

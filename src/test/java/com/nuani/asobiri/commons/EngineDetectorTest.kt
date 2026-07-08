@@ -86,6 +86,46 @@ class EngineDetectorTest {
     }
 
     @Test
+    fun `detects kirikiri from the canonical data xp3 distribution`() {
+        val paths = listOf("game.exe", "data.xp3", "patch.xp3", "readme.txt")
+        assertEquals(Engine.KIRIKIRI, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects kirikiri from any root xp3 asset pack`() {
+        // KAG games mount extra archives (bgm.xp3, scenario.xp3, ...) from
+        // script — a root .xp3 is a KiriKiri signal even without data.xp3.
+        val paths = listOf("game.exe", "scenario.xp3", "bgm.xp3")
+        assertEquals(Engine.KIRIKIRI, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `nested xp3 does not mean kirikiri`() {
+        val paths = listOf("backup/data.xp3", "readme.txt")
+        assertNull(EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects unpacked kirikiri from root startup script`() {
+        val paths = listOf("startup.tjs", "system/Initialize.tjs", "scenario/first.ks")
+        assertEquals(Engine.KIRIKIRI, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `unpacked kirikiri under data wins over the tyrano ks rule`() {
+        // An exe+data KiriKiri distribution carries data/scenario/*.ks —
+        // exactly Tyrano's signature, since Tyrano cloned KAG's layout. The
+        // boot script decides: only KiriKiri requires startup.tjs.
+        val paths = listOf(
+            "game.exe",
+            "data/startup.tjs",
+            "data/system/Initialize.tjs",
+            "data/scenario/first.ks",
+        )
+        assertEquals(Engine.KIRIKIRI, EngineDetector.detect(paths))
+    }
+
+    @Test
     fun `detects tyrano from scenario scripts`() {
         val paths = listOf("index.html", "data/scenario/first.ks", "tyrano/tyrano.js")
         assertEquals(Engine.TYRANO, EngineDetector.detect(paths))
