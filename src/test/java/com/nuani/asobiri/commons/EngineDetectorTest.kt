@@ -1,0 +1,148 @@
+package com.nuani.asobiri.commons
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class EngineDetectorTest {
+
+    @Test
+    fun `detects renpy from rpa archive under game dir`() {
+        val paths = listOf("game/archive.rpa", "game/cache/shaders.txt", "lib/py3-linux-x86_64/renpy")
+        assertEquals(Engine.RENPY, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects renpy from compiled scripts`() {
+        val paths = listOf("game/script.rpyc", "game/options.rpy")
+        assertEquals(Engine.RENPY, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects renpy from sdk runtime dir`() {
+        val paths = listOf("renpy/common/00start.rpy", "launcher.py")
+        assertEquals(Engine.RENPY, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects rpg maker mv browser deploy over generic html`() {
+        // MV always ships an index.html — the HTML fallback must not win.
+        val paths = listOf("index.html", "js/rpg_core.js", "js/plugins.js", "audio/bgm/theme.ogg")
+        assertEquals(Engine.RPG_MAKER_MV, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects rpg maker mv desktop deploy under www`() {
+        val paths = listOf("game.exe", "www/index.html", "www/js/rpg_core.js")
+        assertEquals(Engine.RPG_MAKER_MV, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects rpg maker mz from rmmz core`() {
+        val paths = listOf("index.html", "js/rmmz_core.js", "js/main.js")
+        assertEquals(Engine.RPG_MAKER_MZ, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects rpg maker mz from project file`() {
+        val paths = listOf("game.rmmzproject", "data/system.json")
+        assertEquals(Engine.RPG_MAKER_MZ, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects vx ace from rvdata2 not plain vx`() {
+        val paths = listOf("game.exe", "data/actors.rvdata2", "data/map001.rvdata2")
+        assertEquals(Engine.RPG_MAKER_VX_ACE, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects vx from rvdata`() {
+        val paths = listOf("game.exe", "data/actors.rvdata")
+        assertEquals(Engine.RPG_MAKER_VX, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects xp from rxdata`() {
+        val paths = listOf("game.exe", "data/actors.rxdata", "game.rxproj")
+        assertEquals(Engine.RPG_MAKER_XP, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects packed releases from their rgss archive`() {
+        // Released games ship one encrypted archive instead of loose Data/*
+        // files — the common case for anything downloaded rather than built.
+        assertEquals(
+            Engine.RPG_MAKER_VX_ACE,
+            EngineDetector.detect(listOf("game.exe", "game.ini", "game.rgss3a")),
+        )
+        assertEquals(
+            Engine.RPG_MAKER_VX,
+            EngineDetector.detect(listOf("game.exe", "game.rgss2a")),
+        )
+        assertEquals(
+            Engine.RPG_MAKER_XP,
+            EngineDetector.detect(listOf("game.exe", "game.rgssad")),
+        )
+    }
+
+    @Test
+    fun `detects tyrano from scenario scripts`() {
+        val paths = listOf("index.html", "data/scenario/first.ks", "tyrano/tyrano.js")
+        assertEquals(Engine.TYRANO, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects godot from root pck`() {
+        val paths = listOf("game.pck", "game.exe")
+        assertEquals(Engine.GODOT, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `nested pck does not mean godot`() {
+        // A stray .pck in an asset subfolder isn't a Godot layout signal.
+        val paths = listOf("assets/textures/pack.pck", "index.html")
+        assertEquals(Engine.HTML, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `plain html game falls back to html engine`() {
+        val paths = listOf("index.html", "css/style.css", "js/game.js")
+        assertEquals(Engine.HTML, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects flash from a root swf`() {
+        assertEquals(Engine.FLASH, EngineDetector.detect(listOf("game.swf")))
+    }
+
+    @Test
+    fun `root swf wins over its html wrapper page`() {
+        // Distribution wrappers embed the movie for a browser Flash plugin
+        // that no longer exists; the player must boot the .swf directly.
+        val paths = listOf("index.html", "game.swf", "readme.txt")
+        assertEquals(Engine.FLASH, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `nested swf inside an html game does not mean flash`() {
+        val paths = listOf("index.html", "assets/intro.swf", "js/game.js")
+        assertEquals(Engine.HTML, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `unknown folder returns null`() {
+        val paths = listOf("readme.txt", "photos/img001.jpg")
+        assertNull(EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `empty listing returns null`() {
+        assertNull(EngineDetector.detect(emptyList()))
+    }
+
+    @Test
+    fun `windows separators and mixed case are normalized`() {
+        val paths = listOf("Game\\Archive.RPA", "Game\\Script.rpyc")
+        assertEquals(Engine.RENPY, EngineDetector.detect(paths))
+    }
+}
