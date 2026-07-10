@@ -45,6 +45,7 @@ object EngineDetector {
             isRpgMakerVx(paths)   -> Engine.RPG_MAKER_VX
             isRpgMakerXp(paths)   -> Engine.RPG_MAKER_XP
             isKirikiri(paths)     -> Engine.KIRIKIRI
+            isWolf(paths)         -> Engine.WOLFRPG
             isTyrano(paths)       -> Engine.TYRANO
             isGodot(paths)        -> Engine.GODOT
             isFlash(paths)        -> Engine.FLASH
@@ -101,6 +102,19 @@ object EngineDetector {
     private fun isKirikiri(paths: List<String>) = paths.any {
         (it.endsWith(".xp3") && '/' !in it) ||
             it == "startup.tjs" || it == "data/startup.tjs"
+    }
+
+    // WOLF RPG ships the encrypted archive as Data.wolf at the root (or split
+    // into Data/*.wolf), alongside the GuruguruSMF4.dll MIDI player that no
+    // other engine bundles; a decrypted game exposes BasicData/Game.dat
+    // instead. The .wolf extension and that dll are WOLF's alone, so either
+    // pins the engine. Deliberately NOT keyed on a bare .exe — WOLF, NW.js, and
+    // classic RPG Maker all ship one, so it identifies nothing.
+    private fun isWolf(paths: List<String>) = paths.any {
+        it == "data.wolf" ||
+            (it.startsWith("data/") && it.endsWith(".wolf")) ||
+            it == "gurugurusmf4.dll" ||
+            it.endsWith("basicdata/game.dat")
     }
 
     // Tyrano ships its runtime in tyrano/ and its script (.ks) under

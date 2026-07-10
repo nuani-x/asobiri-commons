@@ -126,6 +126,37 @@ class EngineDetectorTest {
     }
 
     @Test
+    fun `detects wolf rpg from the encrypted root archive`() {
+        val paths = listOf("game.exe", "config.exe", "data.wolf", "gurugurusmf4.dll")
+        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects wolf rpg from a split data archive`() {
+        val paths = listOf("game.exe", "data/data0.wolf", "data/data1.wolf")
+        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects wolf rpg from the guruguru midi player alone`() {
+        val paths = listOf("game.exe", "guruguru smf4.dll".replace(" ", ""))
+        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `detects a decrypted wolf rpg game from basicdata`() {
+        val paths = listOf("game.exe", "data/basicdata/game.dat", "data/basicdata/map000.mps")
+        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `a bare exe is not enough to be wolf rpg`() {
+        // WOLF, NW.js, and RPG Maker all ship a .exe; without a WOLF-specific
+        // artifact this must not misdetect as WOLF.
+        assertNull(EngineDetector.detect(listOf("game.exe", "readme.txt")))
+    }
+
+    @Test
     fun `detects tyrano from scenario scripts`() {
         val paths = listOf("index.html", "data/scenario/first.ks", "tyrano/tyrano.js")
         assertEquals(Engine.TYRANO, EngineDetector.detect(paths))
