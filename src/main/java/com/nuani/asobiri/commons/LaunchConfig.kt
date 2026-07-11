@@ -40,6 +40,14 @@ data class LaunchConfig(
      * fall back to `"fit"` — the always-safe, never-distorting choice.
      */
     val displayScaling: String = "fit",
+    /**
+     * Show an on-screen virtual controller over the game surface. Off by
+     * default: most engines here are tap-driven (a visual novel advances on a
+     * tap), so the overlay is opt-in for the engines and situations where
+     * directional/button input actually helps. A plugin with no overlay of its
+     * own simply ignores this.
+     */
+    val showGamepad: Boolean = false,
 ) {
     fun toJson(): String = codec.encodeToString(serializer(), this)
 
