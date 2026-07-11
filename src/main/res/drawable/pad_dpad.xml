@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cross D-pad, independently authored (NOT derived from mkxp-z's GPL assets)
+    but in the same two-tone visual language as the mkxp plugin's controller:
+    a lighter outer rim (#606060) around a darker face (#404040), white
+    directional arrows, a mid-grey centre hub. One vector, all paths.
+-->
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="132dp"
+    android:height="132dp"
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+
+    <!-- Outer cross (rim). -->
+    <path
+        android:fillColor="#606060"
+        android:pathData="M40,0 L88,0 L88,40 L128,40 L128,88 L88,88 L88,128 L40,128 L40,88 L0,88 L0,40 L40,40 Z" />
+    <!-- Inner cross (face), inset 5. -->
+    <path
+        android:fillColor="#404040"
+        android:pathData="M45,5 L83,5 L83,45 L123,45 L123,83 L83,83 L83,123 L45,123 L45,83 L5,83 L5,45 L45,45 Z" />
+
+    <!-- Directional arrows. -->
+    <path android:fillColor="#FFFFFF" android:pathData="M64,20 L74,34 L54,34 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M64,108 L54,94 L74,94 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M20,64 L34,54 L34,74 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M108,64 L94,74 L94,54 Z" />
+
+    <!-- Centre hub. -->
+    <path
+        android:fillColor="#808080"
+        android:pathData="M64,64 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0" />
+</vector>
