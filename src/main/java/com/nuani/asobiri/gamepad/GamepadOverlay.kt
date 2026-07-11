@@ -38,11 +38,24 @@ object GamepadOverlay {
 
     // Faint by default like mkxp's controller — visible enough to aim at,
     // subtle enough not to fight the art. Fades in so it doesn't pop on launch.
-    private const val OVERLAY_ALPHA = 0.6f
+    const val DEFAULT_OPACITY = 0.6f
 
-    fun create(context: Context, inject: (keycode: Int, down: Boolean) -> Unit): View {
+    /**
+     * @param opacity 0..1 steady-state alpha of the whole overlay.
+     * @param scale multiplier on every control's size (1f is the design size);
+     *   margins stay fixed so the cluster stays anchored to its corner.
+     * @param diagonal when true the D-pad emits 8-way (diagonals), else 4-way.
+     */
+    fun create(
+        context: Context,
+        opacity: Float = DEFAULT_OPACITY,
+        scale: Float = 1f,
+        diagonal: Boolean = false,
+        inject: (keycode: Int, down: Boolean) -> Unit,
+    ): View {
         val density = context.resources.displayMetrics.density
         fun dp(value: Int) = (value * density).toInt()
+        fun sz(value: Int) = (value * density * scale).toInt()
 
         val root = FrameLayout(context).apply {
             isClickable = false
@@ -51,10 +64,10 @@ object GamepadOverlay {
         }
 
         // Cross D-pad, bottom-left.
-        val dpad = DpadView(context, inject)
+        val dpad = DpadView(context, diagonal, inject)
         root.addView(
             dpad,
-            FrameLayout.LayoutParams(dp(132), dp(132)).apply {
+            FrameLayout.LayoutParams(sz(132), sz(132)).apply {
                 gravity = Gravity.BOTTOM or Gravity.START
                 setMargins(dp(20), 0, 0, dp(24))
             },
@@ -65,21 +78,22 @@ object GamepadOverlay {
         val actions = FrameLayout(context)
         actions.addView(
             circleButton(context, "B", KeyEvent.KEYCODE_ESCAPE, inject),
-            FrameLayout.LayoutParams(dp(64), dp(64)).apply { gravity = Gravity.TOP or Gravity.START },
+            FrameLayout.LayoutParams(sz(64), sz(64)).apply { gravity = Gravity.TOP or Gravity.START },
         )
         actions.addView(
             circleButton(context, "A", KeyEvent.KEYCODE_ENTER, inject),
-            FrameLayout.LayoutParams(dp(64), dp(64)).apply { gravity = Gravity.BOTTOM or Gravity.END },
+            FrameLayout.LayoutParams(sz(64), sz(64)).apply { gravity = Gravity.BOTTOM or Gravity.END },
         )
         root.addView(
             actions,
-            FrameLayout.LayoutParams(dp(150), dp(132)).apply {
+            FrameLayout.LayoutParams(sz(150), sz(132)).apply {
                 gravity = Gravity.BOTTOM or Gravity.END
                 setMargins(0, 0, dp(20), dp(24))
             },
         )
 
-        root.post { root.animate().alpha(OVERLAY_ALPHA).setDuration(250).start() }
+        val target = opacity.coerceIn(0f, 1f)
+        root.post { root.animate().alpha(target).setDuration(250).start() }
         return root
     }
 
@@ -123,13 +137,16 @@ object GamepadOverlay {
 
 /**
  * A single cross-shaped pad you touch anywhere on: it reads the touch position
- * relative to its centre and emits the dominant direction (4-way, like mkxp's
- * default — the axis with the larger offset wins, so a menu never gets two
- * directions at once). Sliding between directions releases the old key before
- * pressing the new one, so a held slide reads as continuous movement.
+ * relative to its centre and emits a direction. In 4-way mode (mkxp's default)
+ * the axis with the larger offset wins, so a menu never gets two directions at
+ * once; in 8-way mode a second axis joins once it is a large enough fraction of
+ * the dominant one, giving true diagonals. Sliding between directions releases
+ * the old key(s) before pressing the new one(s), so a held slide reads as
+ * continuous movement.
  */
 private class DpadView(
     context: Context,
+    private val diagonal: Boolean,
     private val inject: (keycode: Int, down: Boolean) -> Unit,
 ) : View(context) {
 
@@ -168,6 +185,20 @@ private class DpadView(
         val dead = minOf(width, height) * 0.20f
         val target: Set<Int> = when {
             hypot(dx, dy) < dead -> emptySet()
+            diagonal -> {
+                // Include an axis once it reaches 40% of the dominant one, so a
+                // near-cardinal touch stays cardinal and a true diagonal fires
+                // both keys.
+                val keys = mutableSetOf<Int>()
+                val threshold = maxOf(abs(dx), abs(dy)) * 0.4f
+                if (abs(dx) >= threshold) {
+                    keys.add(if (dx < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT)
+                }
+                if (abs(dy) >= threshold) {
+                    keys.add(if (dy < 0) KeyEvent.KEYCODE_DPAD_UP else KeyEvent.KEYCODE_DPAD_DOWN)
+                }
+                keys
+            }
             abs(dx) >= abs(dy) ->
                 setOf(if (dx < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT)
             else ->
