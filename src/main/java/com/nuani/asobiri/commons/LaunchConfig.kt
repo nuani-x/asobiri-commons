@@ -48,6 +48,18 @@ data class LaunchConfig(
      * own simply ignores this.
      */
     val showGamepad: Boolean = false,
+    /**
+     * Appearance of that overlay, all no-ops unless [showGamepad] is on:
+     *  - [gamepadOpacity] 0..100 — how visible the controls are over the art.
+     *  - [gamepadScale] percent — control size; 100 is the design size.
+     *  - [gamepadDiagonal] — whether the D-pad emits 8-way (diagonals) or
+     *    stays 4-way, the safer default for menu-driven games.
+     * Defaults match the built-in look so an older plugin, or one that renders
+     * a fixed overlay, behaves exactly as before.
+     */
+    val gamepadOpacity: Int = 60,
+    val gamepadScale: Int = 100,
+    val gamepadDiagonal: Boolean = false,
 ) {
     fun toJson(): String = codec.encodeToString(serializer(), this)
 
