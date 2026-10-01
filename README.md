@@ -10,10 +10,21 @@ Consumed as a git submodule by the main Asobiri repo and by
 [asobiri-plugin-mkxp](https://github.com/nuani-x/asobiri-plugin-mkxp) (published separately so its
 GPL-2.0 corresponding-source obligation doesn't force the rest of Asobiri open).
 
+## The gamepad module
+
+`gamepad/` is the on-screen controller (D-pad, A/B) that plugins draw over their game. It is UI
+only and not part of the wire contract; it lives here so the launcher and every plugin share one
+copy. A host adds it next to `:commons`:
+
+```kotlin
+include(":gamepad")
+project(":gamepad").projectDir = file("commons/gamepad")
+```
+
 ## Build
 
 ```
-./gradlew test
+./gradlew test assemble
 ```
 
 ## Contract discipline
