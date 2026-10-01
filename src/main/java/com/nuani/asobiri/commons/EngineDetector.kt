@@ -16,9 +16,11 @@ package com.nuani.asobiri.commons
  * crash, which is why a fast first-match beats an elaborate scorer here.
  *
  * RULE ORDER IS LOAD-BEARING. Game layouts overlap: every RPG Maker MV/MZ
- * export ships an index.html, so the generic [isHtml] rule must come last or
- * it would swallow them. MZ is checked before MV, and VX Ace before VX, for
- * the same reason — most specific signature first. Reorder with care.
+ * export ships an index.html, so the generic [isHtml] rule must come after
+ * them, and nearly every engine's Windows export ships an .exe, so the
+ * [isWindows] fallback comes last of all. MZ is checked before MV, and VX Ace
+ * before VX, for the same reason — most specific signature first. Reorder
+ * with care.
  */
 object EngineDetector {
 
@@ -45,11 +47,12 @@ object EngineDetector {
             isRpgMakerVx(paths)   -> Engine.RPG_MAKER_VX
             isRpgMakerXp(paths)   -> Engine.RPG_MAKER_XP
             isKirikiri(paths)     -> Engine.KIRIKIRI
-            isWolf(paths)         -> Engine.WOLFRPG
+            isWolf(paths)         -> wolfEngine(paths)
             isTyrano(paths)       -> Engine.TYRANO
             isGodot(paths)        -> Engine.GODOT
             isFlash(paths)        -> Engine.FLASH
             isHtml(paths)         -> Engine.HTML
+            isWindows(paths)      -> Engine.WINDOWS
             else                  -> null
         }
     }
@@ -117,6 +120,14 @@ object EngineDetector {
             it.endsWith("basicdata/game.dat")
     }
 
+    // Asobiri's own WOLF engine reads decrypted data only: the app never
+    // decrypts a game's archives (that is where anti-circumvention law bites).
+    // So a release without BasicData/Game.dat that ships its Game.exe goes to
+    // the Windows plugin, where the game's own executable opens its archives.
+    private fun wolfEngine(paths: List<String>): Engine =
+        if (paths.none { it.endsWith("basicdata/game.dat") } && isWindows(paths)) Engine.WINDOWS
+        else Engine.WOLFRPG
+
     // Tyrano ships its runtime in tyrano/ and its script (.ks) under
     // data/scenario/. Either signal alone is enough; the scenario path is the
     // more reliable one since some builds rename the runtime dir.
@@ -144,4 +155,12 @@ object EngineDetector {
     // index.html has been ruled out above — hence a root index.html here really
     // is a plain web game, not an RPG Maker export in disguise.
     private fun isHtml(paths: List<String>) = "index.html" in paths
+
+    // The fallback: any .exe at the ROOT runs through Wine. Last on purpose,
+    // since Ren'Py, RPG Maker, Godot, KiriKiri and NW.js exports all ship one
+    // and each runs better natively. Nested .exe files (setup tools, redist
+    // installers in a subfolder) are not the game, so they must not match.
+    private fun isWindows(paths: List<String>) = paths.any {
+        it.endsWith(".exe") && '/' !in it
+    }
 }

@@ -32,6 +32,11 @@ enum class Engine(val id: String, val displayName: String) {
     KIRIKIRI("kirikiri", "KiriKiri"),
     WOLFRPG("wolfrpg", "WOLF RPG Editor"),
 
+    // A Windows program, run through Wine by asobiri-plugin-wine. The id names
+    // the kind of game, not the tool, so it stays true if the runtime changes.
+    // EngineDetector assigns it only when no native engine claims the game.
+    WINDOWS("windows", "Windows"),
+
     // Diagnostics-only. EngineDetector never emits it, so no real game ever
     // routes here; it exists so a stub plugin can exercise discovery and
     // hand-off without shadowing a real engine's plugin in the resolver.

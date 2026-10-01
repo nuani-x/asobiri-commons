@@ -126,21 +126,23 @@ class EngineDetectorTest {
     }
 
     @Test
-    fun `detects wolf rpg from the encrypted root archive`() {
+    fun `an encrypted wolf release with its exe goes to windows`() {
+        // The native WOLF engine reads decrypted data only; the game's own
+        // Game.exe opens its archives under Wine.
         val paths = listOf("game.exe", "config.exe", "data.wolf", "gurugurusmf4.dll")
-        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+        assertEquals(Engine.WINDOWS, EngineDetector.detect(paths))
     }
 
     @Test
-    fun `detects wolf rpg from a split data archive`() {
+    fun `a split encrypted wolf release with its exe goes to windows`() {
         val paths = listOf("game.exe", "data/data0.wolf", "data/data1.wolf")
-        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+        assertEquals(Engine.WINDOWS, EngineDetector.detect(paths))
     }
 
     @Test
-    fun `detects wolf rpg from the guruguru midi player alone`() {
-        val paths = listOf("game.exe", "guruguru smf4.dll".replace(" ", ""))
-        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+    fun `an encrypted wolf release without an exe stays wolf rpg`() {
+        // Nothing for Wine to run; the native plugin reports what is missing.
+        assertEquals(Engine.WOLFRPG, EngineDetector.detect(listOf("data.wolf", "gurugurusmf4.dll")))
     }
 
     @Test
@@ -150,10 +152,41 @@ class EngineDetectorTest {
     }
 
     @Test
-    fun `a bare exe is not enough to be wolf rpg`() {
-        // WOLF, NW.js, and RPG Maker all ship a .exe; without a WOLF-specific
-        // artifact this must not misdetect as WOLF.
-        assertNull(EngineDetector.detect(listOf("game.exe", "readme.txt")))
+    fun `decrypted data wins over the encrypted archive left beside it`() {
+        val paths = listOf("game.exe", "data.wolf", "data/basicdata/game.dat")
+        assertEquals(Engine.WOLFRPG, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `a bare root exe goes to windows`() {
+        // No native engine claims it, so Wine runs it.
+        assertEquals(Engine.WINDOWS, EngineDetector.detect(listOf("game.exe", "readme.txt")))
+    }
+
+    @Test
+    fun `an rpg maker 2003 game goes to windows`() {
+        val paths = listOf("rpg_rt.exe", "rpg_rt.ldb", "rpg_rt.lmt", "map0001.lmu")
+        assertEquals(Engine.WINDOWS, EngineDetector.detect(paths))
+    }
+
+    @Test
+    fun `native engines win over the exe their windows export ships`() {
+        assertEquals(Engine.RENPY, EngineDetector.detect(listOf("game.exe", "game/archive.rpa")))
+        assertEquals(Engine.RPG_MAKER_MV, EngineDetector.detect(listOf("game.exe", "www/js/rpg_core.js")))
+        assertEquals(Engine.KIRIKIRI, EngineDetector.detect(listOf("krkr.exe", "data.xp3")))
+    }
+
+    @Test
+    fun `a root html page wins over a root exe`() {
+        // An NW.js or Electron wrapper around a plain web game runs in the
+        // WebView, not under Wine.
+        assertEquals(Engine.HTML, EngineDetector.detect(listOf("nw.exe", "index.html")))
+    }
+
+    @Test
+    fun `a nested exe does not mean windows`() {
+        // Installers and tools in a subfolder are not the game.
+        assertNull(EngineDetector.detect(listOf("redist/vcredist_x86.exe", "readme.txt")))
     }
 
     @Test
